@@ -8,7 +8,7 @@
     <com.caragiz_studioz.library.easycamera2.CameraView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/camera_view"/>
+        android:id="@+id/texture_view"/>
 
     <android.support.design.widget.FloatingActionButton
         android:layout_width="56dp"
