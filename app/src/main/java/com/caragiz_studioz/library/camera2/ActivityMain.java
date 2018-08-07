@@ -8,11 +8,19 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 
 import com.caragiz_studioz.library.easycamera2.CameraView;
 
 public class ActivityMain extends AppCompatActivity {
-
+//// TODO: 07-08-2018 add features
+    /*
+    * camera to use(front or rear or external)
+    * method for return (data stream or bitmap)
+    * focus control
+    * exposure control
+    * frame rate control
+    * */
     CameraView camera;
 FloatingActionButton click;
     @Override
@@ -27,7 +35,13 @@ FloatingActionButton click;
         {
             setContentView(R.layout.activity_main);
             camera = findViewById(R.id.camera_view);
-            click.setOnClickListener(grabImage());
+            click = findViewById(R.id.fab_take_photo);
+            click.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    grabImage();
+                }
+            });
         }
     }
 
@@ -39,7 +53,13 @@ FloatingActionButton click;
             {
                 setContentView(R.layout.activity_main);
                 camera = findViewById(R.id.camera_view);
-                click.setOnClickListener(grabImage());
+                click = findViewById(R.id.fab_take_photo);
+                click.setOnClickListener(new View.OnClickListener(){
+                    @Override
+                    public void onClick(View v) {
+                        grabImage();
+                    }
+                });
             }
         }
     }
