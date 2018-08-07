@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CameraView extends TextureView {
+public class CameraView extends TextureView implements ImageReader.OnImageAvailableListener{
     private Size previewSize;
     private String cameraId;
     private CameraDevice cameraDevice;
@@ -46,6 +46,8 @@ public class CameraView extends TextureView {
     private CameraCaptureSession cameraCaptureSession;
     private ImageReader imageReader;
     private Image image;
+    private ImageReader.OnImageAvailableListener imageAvailableListener;
+    private ByteBuffer data;
 
     public CameraView(Context context) {
         super(context);
@@ -67,17 +69,23 @@ public class CameraView extends TextureView {
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e("Error", "Camera Permissions not granted");
         } else {
+
+            imageAvailableListener = new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    Image.Plane[] planes = image.getPlanes();
+                    data = planes[0].getBuffer();
+                }
+            };
             cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
             cameraFacing = CameraCharacteristics.LENS_FACING_BACK;
-            imageReader = ImageReader.newInstance(previewSize.getWidth(),
-                    previewSize.getHeight(),
-                    ImageFormat.JPEG,
-                    1);
+
             stateCallback = new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
                     cameraDevice = camera;
                     createPreviewSession();
+
                 }
 
                 @Override
@@ -97,6 +105,7 @@ public class CameraView extends TextureView {
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                     setUpCamera();
                     openCamera();
+
                 }
 
                 @Override
@@ -114,16 +123,7 @@ public class CameraView extends TextureView {
 
                 }
             };
-
-            imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-                    image = reader.acquireNextImage();
-                }
-            }, backgroundHandler);
-
         }
-
     }
 
     private void setUpCamera() {
@@ -201,6 +201,13 @@ public class CameraView extends TextureView {
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(previewSurface);
 
+            imageReader = ImageReader.newInstance(previewSize.getWidth(),
+                    previewSize.getHeight(),
+                    ImageFormat.JPEG,
+                    2);
+            captureRequestBuilder.addTarget(imageReader.getSurface());
+            imageReader.setOnImageAvailableListener(this , backgroundHandler);
+
             List<Surface> imageSurface = new ArrayList<>(2);
             imageSurface.add(previewSurface);
             imageSurface.add(imageReader.getSurface());
@@ -247,11 +254,20 @@ public class CameraView extends TextureView {
                 }
             }, backgroundHandler);
 
-            image = imageReader.acquireLatestImage();
-            return image.getPlanes()[0].getBuffer();
+            if(data != null)
+            return data;
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
         return null;
     }
+
+    @Override
+    public void onImageAvailable(ImageReader reader) {
+        image = reader.acquireNextImage();
+        Image.Plane[] planes = image.getPlanes();
+        data = planes[0].getBuffer();
+        reader.close();
+    }
+
 }
