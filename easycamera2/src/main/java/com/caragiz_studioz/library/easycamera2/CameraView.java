@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.TypedArray;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -30,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CameraView extends TextureView implements ImageReader.OnImageAvailableListener{
+public class CameraView extends TextureView implements ImageReader.OnImageAvailableListener {
     private Size previewSize;
     private String cameraId;
     private CameraDevice cameraDevice;
@@ -48,23 +49,34 @@ public class CameraView extends TextureView implements ImageReader.OnImageAvaila
     private Image image;
     private ImageReader.OnImageAvailableListener imageAvailableListener;
     private ByteBuffer data;
+    private int cameraToUse;
 
     public CameraView(Context context) {
         super(context);
-        initView(context);
+        initView(context, null);
     }
 
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        initView(context);
+        initView(context, attrs);
     }
 
     public CameraView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        initView(context);
+        initView(context, attrs);
     }
 
-    private void initView(Context context) {
+    private void initView(Context context, AttributeSet attrs) {
+        if (attrs != null) {
+            TypedArray a = context.getTheme().obtainStyledAttributes(attrs,
+                    R.styleable.CameraView, 0, 0);
+            try {
+                cameraToUse = a.getInteger(R.styleable.CameraView_cameraToUse, 0);
+            } finally {
+                a.recycle();
+            }
+        }
+
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e("Error", "Camera Permissions not granted");
@@ -78,7 +90,12 @@ public class CameraView extends TextureView implements ImageReader.OnImageAvaila
                 }
             };
             cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-            cameraFacing = CameraCharacteristics.LENS_FACING_BACK;
+            if (cameraToUse == 0)
+                cameraFacing = CameraCharacteristics.LENS_FACING_BACK;
+            else if (cameraToUse == 1)
+                cameraFacing = CameraCharacteristics.LENS_FACING_FRONT;
+            else
+                cameraFacing = CameraCharacteristics.LENS_FACING_EXTERNAL;
 
             stateCallback = new CameraDevice.StateCallback() {
                 @Override
@@ -206,7 +223,7 @@ public class CameraView extends TextureView implements ImageReader.OnImageAvaila
                     ImageFormat.JPEG,
                     2);
             captureRequestBuilder.addTarget(imageReader.getSurface());
-            imageReader.setOnImageAvailableListener(this , backgroundHandler);
+            imageReader.setOnImageAvailableListener(this, backgroundHandler);
 
             List<Surface> imageSurface = new ArrayList<>(2);
             imageSurface.add(previewSurface);
@@ -254,13 +271,15 @@ public class CameraView extends TextureView implements ImageReader.OnImageAvaila
                 }
             }, backgroundHandler);
 
-            if(data != null)
-            return data;
+            if (data != null)
+                return data;
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
         return null;
     }
+
+    
 
     @Override
     public void onImageAvailable(ImageReader reader) {

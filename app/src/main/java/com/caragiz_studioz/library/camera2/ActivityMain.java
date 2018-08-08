@@ -15,7 +15,6 @@ import com.caragiz_studioz.library.easycamera2.CameraView;
 public class ActivityMain extends AppCompatActivity {
 //// TODO: 07-08-2018 add features
     /*
-    * camera to use(front or rear or external)
     * method for return (data stream or bitmap)
     * focus control
     * exposure control
